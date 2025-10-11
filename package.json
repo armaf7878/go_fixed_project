@@ -1,0 +1,24 @@
+{
+  "name": "gofixed_project",
+  "version": "1.0.0",
+  "description": "One tap, and help is on the way.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/armaf7878/go_fixed_project.git"
+  },
+  "author": "Ngo Thanh Danh",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/armaf7878/go_fixed_project/issues"
+  },
+  "homepage": "https://github.com/armaf7878/go_fixed_project#readme",
+  "dependencies": {
+    "express": "^5.1.0",
+    "mongoose": "^8.19.1"
+  }
+}
