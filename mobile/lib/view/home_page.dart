@@ -11,6 +11,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mobile/config/themes/app_color.dart';
 import 'package:mobile/controller/banner_controller.dart';
+import 'package:mobile/controller/user_controller.dart';
 import 'package:mobile/domain/model/service.dart';
 import 'package:mobile/router/app_router.dart';
 import 'package:mobile/view/login_page.dart';
@@ -95,55 +96,39 @@ class _HomePageState extends State<HomePage> {
       isActive: true,
     ),
   ];
-
+  UserController? _userCtrl;
+  bool _ready = false;
   @override
   void initState() {
     super.initState();
-    _loadName();
+    _init();
     // _load();
   }
 
-  Future<void> _loadName() async {
+  Future<void> _init() async {
+    _userCtrl = await UserController.create();
+    if (!mounted) return;
+    setState(() => _ready = true);
+
     try {
-      final sp = await SharedPreferences.getInstance();
-      final token = sp.getString('token'); // đã lưu sau login
-      if (token == null) {
-        setState(() {
-          _name = 'Guest';
-          _loadingName = false;
-        });
-        return;
-      }
-
-      final res = await http.get(
-        Uri.parse('$kBaseUrl/account/me'),
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        final user = data['user'] ?? data;
-        final name = (user['fullname']).toString();
-        setState(() {
-          _name = name;
-          _loadingName = false;
-        });
-      } else {
-        setState(() {
-          _name = 'User';
-          _loadingName = false;
-        });
-      }
-    } catch (_) {
+      final n = await _userCtrl!.fetchDisplayName(); // 👈 gọi hàm bạn cần
+      if (!mounted) return;
       setState(() {
-        _name = 'User';
+        _name = n;
         _loadingName = false;
       });
+    } catch (e) {
+      // Có thể do chưa có token (No token) hoặc lỗi API
+      if (!mounted) return;
+      setState(() {
+        _name = 'CHưa có TK';
+        _loadingName = false;
+      });
+      debugPrint('fetchDisplayName error: $e');
     }
   }
+
+  
   // Future<void> _load() async {
   //   final name = await UserRepo.fetchDisplayName();
   //   setState(() => _name = name);

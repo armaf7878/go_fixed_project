@@ -7,6 +7,7 @@ import 'package:mobile/common/app_button.dart';
 import 'package:mobile/config/assets/app_image.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/config/themes/app_color.dart';
+import 'package:mobile/controller/user_controller.dart';
 import 'package:mobile/router/app_router.dart';
 import 'package:mobile/view/main_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,67 +24,29 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _pwdController = TextEditingController();
-  bool _loading = false;
+
+   bool _loading = false;
   bool _obscure = true;
+
+  UserController? _userCtrl;
+  bool _ctrlReady = false;
+  @override
+  void initState() {
+    super.initState();
+    _initCtrl();
+  }
+  Future<void> _initCtrl() async {
+    _userCtrl = await UserController.create();
+    if (!mounted) return;
+    setState(() => _ctrlReady = true);
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
     _pwdController.dispose();
     super.dispose();
   }
-
-  Future<void> _login() async {
-    final email = _emailController.text.trim();
-    final pwd = _pwdController.text;
-
-    if (email.isEmpty || pwd.isEmpty) {
-      _showSnack('Vui lòng nhập email và mật khẩu');
-      return;
-    }
-
-    setState(() => _loading = true);
-    try {
-      final res = await http.post(
-        Uri.parse('$kBaseUrl/account/login'),
-        headers: {'Content-Type': 'application/json'},
-        // Nếu server bạn đang nhận password_hash thay vì password:
-        // body: jsonEncode({'email': email, 'password_hash': pwd}),
-        body: jsonEncode({'email': email, 'password_hash': pwd}),
-      );
-
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body) as Map<String, dynamic>;
-
-        // Nếu bạn đã làm JWT ở server:
-        final token = data['token'] as String?;
-        if (token != null) {
-          final sp = await SharedPreferences.getInstance();
-          await sp.setString('token', token);
-        }
-
-        _showSnack('Đăng nhập thành công!');
-        // // TODO: điều hướng sang Home
-        await Future.delayed(const Duration(milliseconds: 500));
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => Mainscreen()),
-        );
-      } else {
-        // cố gắng đọc message từ server
-        String msg = 'Đăng nhập thất bại (${res.statusCode})';
-        try {
-          final err = jsonDecode(res.body);
-          msg = (err['error'] ?? err['message'] ?? msg).toString();
-        } catch (_) {}
-        _showSnack(msg);
-      }
-    } catch (e) {
-      _showSnack('Lỗi kết nối: $e');
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
   void _showSnack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
@@ -154,10 +117,33 @@ class _LoginPageState extends State<LoginPage> {
                     width: double.infinity,
                     child: AppButton(
                       content: 'Log In',
-                      onPressed: () async {
-                        if (_loading) return;
-                        await _login();
-                      },
+                      onPressed: _loading
+                          ? null
+                          : () async {
+                              setState(() => _loading = true);
+                              try {
+                                final ok = await _userCtrl!.login(
+                                  email: _emailController.text.trim(),
+                                  password: _pwdController.text,
+                                );
+                                if (!mounted || !ok) return;
+                                _showSnack(
+                                  'Đăng nhập thành công!',
+                                );
+                                await Future.delayed(
+                                  const Duration(milliseconds: 500),
+                                );
+                                if (!mounted) return;
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(builder: (_)=> const Mainscreen()),
+                                );
+                              } catch (e) {
+                                _showSnack(e.toString());
+                              } finally {
+                                if (mounted) setState(() => _loading = false);
+                              }
+                            },
                     ),
                   ),
                 ),
@@ -281,7 +267,7 @@ class _LoginPageState extends State<LoginPage> {
           controller: _pwdController,
           cursorColor: AppColor.primaryColor,
           style: TextStyle(color: Colors.black),
-          obscureText: true,
+          obscureText: _obscure,
           decoration: InputDecoration(
             hintText: "PassWord",
             hintStyle: TextStyle(color: Colors.black),

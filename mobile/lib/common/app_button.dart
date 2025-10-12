@@ -3,9 +3,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/config/themes/app_color.dart';
 
 class AppButton extends StatelessWidget {
-  const AppButton({super.key, required this.content, required this.onPressed});
-  final String content;
-  final VoidCallback onPressed;
+  const AppButton({super.key, required this.content, this.onPressed,  this.isLoading = false,});
+ final String content;
+  final VoidCallback? onPressed;
+  final bool isLoading;
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
@@ -15,7 +16,7 @@ class AppButton extends StatelessWidget {
         backgroundColor: AppColor.primaryColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       ),
-      onPressed: onPressed,
+       onPressed: isLoading ? null : onPressed,   
       child: Text(
         content,
         textAlign: TextAlign.center, // chữ ở giữa
