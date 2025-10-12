@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import '../dto/service_dto.dart';
-import '../../domain/model/service.dart';
+import '../../model/service.dart';
 
 class ServiceRepo {
   ServiceRepo(this._dio);

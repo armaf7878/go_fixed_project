@@ -12,7 +12,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mobile/config/themes/app_color.dart';
 import 'package:mobile/controller/banner_controller.dart';
 import 'package:mobile/controller/user_controller.dart';
-import 'package:mobile/domain/model/service.dart';
+import 'package:mobile/model/service.dart';
 import 'package:mobile/router/app_router.dart';
 import 'package:mobile/view/login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
