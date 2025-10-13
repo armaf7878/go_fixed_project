@@ -1,8 +1,4 @@
-import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:mobile/common/app_button.dart';
 import 'package:mobile/config/assets/app_image.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -10,7 +6,6 @@ import 'package:mobile/config/themes/app_color.dart';
 import 'package:mobile/controller/user_controller.dart';
 import 'package:mobile/router/app_router.dart';
 import 'package:mobile/view/main_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 const String kBaseUrl = AppRouter.main_domain;
 
@@ -25,7 +20,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _pwdController = TextEditingController();
 
-   bool _loading = false;
+  bool _loading = false;
   bool _obscure = true;
 
   UserController? _userCtrl;
@@ -35,6 +30,7 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
     _initCtrl();
   }
+
   Future<void> _initCtrl() async {
     _userCtrl = await UserController.create();
     if (!mounted) return;
@@ -47,6 +43,7 @@ class _LoginPageState extends State<LoginPage> {
     _pwdController.dispose();
     super.dispose();
   }
+
   void _showSnack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
@@ -120,23 +117,37 @@ class _LoginPageState extends State<LoginPage> {
                       onPressed: _loading
                           ? null
                           : () async {
+                              if (!_ctrlReady || _userCtrl == null) {
+                                _showSnack('Đang khởi tạo, vui lòng chờ…');
+                                return;
+                              }
+                              final email = _emailController.text.trim();
+                              final pwd = _pwdController.text;
+                              if (email.isEmpty || pwd.isEmpty) {
+                                _showSnack('Vui lòng nhập email và mật khẩu');
+                                return;
+                              }
+
+                              FocusScope.of(context).unfocus(); // ẩn bàn phím
+
                               setState(() => _loading = true);
                               try {
                                 final ok = await _userCtrl!.login(
-                                  email: _emailController.text.trim(),
-                                  password: _pwdController.text,
+                                  email: email,
+                                  password: pwd,
+                                  // useHashKey: true, // bật nếu server dùng 'password_hash'
                                 );
                                 if (!mounted || !ok) return;
-                                _showSnack(
-                                  'Đăng nhập thành công!',
-                                );
+                                _showSnack('Đăng nhập thành công!');
                                 await Future.delayed(
                                   const Duration(milliseconds: 500),
                                 );
                                 if (!mounted) return;
                                 Navigator.pushReplacement(
                                   context,
-                                  MaterialPageRoute(builder: (_)=> const Mainscreen()),
+                                  MaterialPageRoute(
+                                    builder: (_) => const Mainscreen(),
+                                  ),
                                 );
                               } catch (e) {
                                 _showSnack(e.toString());

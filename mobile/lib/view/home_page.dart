@@ -1,159 +1,110 @@
-import 'dart:convert';
 import 'dart:math' as math;
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
 import 'package:mobile/config/assets/app_banner.dart';
 import 'package:mobile/config/assets/app_icon.dart';
 import 'package:mobile/config/assets/app_image.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mobile/config/themes/app_color.dart';
-import 'package:mobile/controller/banner_controller.dart';
-import 'package:mobile/controller/user_controller.dart';
-import 'package:mobile/model/service.dart';
-import 'package:mobile/router/app_router.dart';
-import 'package:mobile/view/login_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-const String kBaseUrl = AppRouter.main_domain;
+import 'package:mobile/controller/user_controller.dart';
+import 'package:mobile/controller/banner_controller.dart';
+import 'package:mobile/model/service.dart';
+
+// UI widgets
+import 'package:mobile/widgets/banner/banner_carousel.dart';
+import 'package:mobile/widgets/banner/dots_indicator.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
-
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  // --- User ---
+  UserController? _userCtrl;
   String _name = '...';
   bool _loadingName = true;
-  final String _location = 'Q12, TP.HCM'; // tạm: dữ liệu mock
-  final bool _loadingLoc =
-      false; // nếu chưa gọi _load(), đừng để true kẻo spinner quay mãi
+
+  // --- Banner ---
+  BannerController? _bannerCtrl;
+  int _bannerIndex = 0;
+
+  // mock location + services
+  final String _location = 'Q12, TP.HCM';
+  final bool _loadingLoc = false;
+
   final _searchCtl = TextEditingController();
-  final List<String> banners = [
-    AppBanner.banner_1,
-    AppBanner.banner_1,
-    AppBanner.banner_1,
-  ];
   final List<Service> items = <Service>[
-    Service(
-      id: '1',
-      title: 'Cứu hộ lốp',
-      iconUrl: null,
-      price: 150000,
-      isActive: true,
-    ),
-    Service(
-      id: '2',
-      title: 'Kéo xe',
-      iconUrl: null,
-      price: 350000,
-      isActive: true,
-    ),
-    Service(
-      id: '3',
-      title: 'Ắc quy',
-      iconUrl: null,
-      price: 250000,
-      isActive: true,
-    ),
-    Service(
-      id: '4',
-      title: 'Nhiên liệu',
-      iconUrl: null,
-      price: 200000,
-      isActive: true,
-    ),
-    Service(
-      id: '3',
-      title: 'Ắc quy',
-      iconUrl: null,
-      price: 250000,
-      isActive: true,
-    ),
-    Service(
-      id: '4',
-      title: 'Nhiên liệu',
-      iconUrl: null,
-      price: 200000,
-      isActive: true,
-    ),
-    Service(
-      id: '3',
-      title: 'Ắc quy',
-      iconUrl: null,
-      price: 250000,
-      isActive: true,
-    ),
-    Service(
-      id: '4',
-      title: 'Nhiên liệu',
-      iconUrl: null,
-      price: 200000,
-      isActive: true,
-    ),
+    Service(id: '1', title: 'Cứu hộ lốp', iconUrl: null, price: 150000, isActive: true),
+    Service(id: '2', title: 'Kéo xe',     iconUrl: null, price: 350000, isActive: true),
+    Service(id: '3', title: 'Ắc quy',     iconUrl: null, price: 250000, isActive: true),
+    Service(id: '4', title: 'Nhiên liệu', iconUrl: null, price: 200000, isActive: true),
+    Service(id: '5', title: 'Ắc quy',     iconUrl: null, price: 250000, isActive: true),
+    Service(id: '6', title: 'Nhiên liệu', iconUrl: null, price: 200000, isActive: true),
+    Service(id: '7', title: 'Ắc quy',     iconUrl: null, price: 250000, isActive: true),
+    Service(id: '8', title: 'Nhiên liệu', iconUrl: null, price: 200000, isActive: true),
   ];
-  UserController? _userCtrl;
-  bool _ready = false;
+
   @override
   void initState() {
     super.initState();
-    _init();
-    // _load();
+    _initControllers();
   }
 
-  Future<void> _init() async {
+  Future<void> _initControllers() async {
+    // User
     _userCtrl = await UserController.create();
     if (!mounted) return;
-    setState(() => _ready = true);
-
     try {
-      final n = await _userCtrl!.fetchDisplayName(); // 👈 gọi hàm bạn cần
+      final n = await _userCtrl!.fetchDisplayName();
       if (!mounted) return;
       setState(() {
         _name = n;
         _loadingName = false;
       });
-    } catch (e) {
-      // Có thể do chưa có token (No token) hoặc lỗi API
+    } catch (_) {
       if (!mounted) return;
       setState(() {
-        _name = 'CHưa có TK';
+        _name = 'Chưa đăng nhập';
         _loadingName = false;
       });
-      debugPrint('fetchDisplayName error: $e');
     }
+
+    // Banner
+    _bannerCtrl = await BannerController.create();
+    _bannerCtrl!.addListener(_onBannerChanged);
+    await _bannerCtrl!.load(); // gọi API /banners
+    if (!mounted) return;
+    setState(() {}); // refresh UI lần đầu
   }
 
-  
-  // Future<void> _load() async {
-  //   final name = await UserRepo.fetchDisplayName();
-  //   setState(() => _name = name);
+  void _onBannerChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
 
-  //   try {
-  //     final loc = await UserRepo.fetchLocationLabel();
-  //     setState(() {
-  //       _location = loc;
-  //       _loadingLoc = false;
-  //     });
-  //   } catch (_) {
-  //     setState(() {
-  //       _location = 'Location off';
-  //       _loadingLoc = false;
-  //     });
-  //   }
-  // }
+  @override
+  void dispose() {
+    _bannerCtrl?.removeListener(_onBannerChanged);
+    _bannerCtrl?.dispose();
+    _searchCtl.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final loadingBanners = _bannerCtrl?.loading ?? true;
+    final bannerError    = _bannerCtrl?.error;
+    final bannerItems    = _bannerCtrl?.items ?? const [];
+
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 80.h,
         leadingWidth: 80.h,
         backgroundColor: Colors.transparent,
-        // centerTitle: true,
         elevation: 0,
         leading: Padding(
           padding: EdgeInsets.only(left: 12.r),
@@ -163,55 +114,41 @@ class _HomePageState extends State<HomePage> {
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Row(
-              mainAxisSize: MainAxisSize.min, // ✅ chỉ rộng theo nội dung
+              mainAxisSize: MainAxisSize.min,
               children: [
                 _userHead(_name),
                 SizedBox(width: 10.w),
                 _userSetting(),
-
-                ///
               ],
             ),
           ),
         ],
       ),
 
-      // leadingWidth: 44,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Column(
             children: [
+              // Search + nút bên phải
               Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _searchCtl,
-                      style: TextStyle(color: Colors.black),
+                      style: const TextStyle(color: Colors.black),
                       cursorColor: AppColor.primaryColor,
-                      onChanged: (q) {
-                        // TODO: lọc danh sách theo q
-                      },
+                      onChanged: (q) { /* TODO filter */ },
                       textInputAction: TextInputAction.search,
                       decoration: InputDecoration(
                         hintText: 'Tìm kiếm...',
-                        hintStyle: TextStyle(color: Colors.black38),
-                        prefixIcon: const Icon(
-                          Icons.search,
-                          color: Colors.black,
-                        ),
+                        hintStyle: const TextStyle(color: Colors.black38),
+                        prefixIcon: const Icon(Icons.search, color: Colors.black),
                         suffixIcon: _searchCtl.text.isEmpty
                             ? null
                             : IconButton(
-                                icon: const Icon(
-                                  Icons.clear,
-                                  color: Colors.black,
-                                ),
-                                onPressed: () {
-                                  _searchCtl.clear();
-                                  setState(() {}); // cập nhật UI
-                                  // TODO: reset lọc nếu cần
-                                },
+                                icon: const Icon(Icons.clear, color: Colors.black),
+                                onPressed: () { _searchCtl.clear(); setState(() {}); },
                               ),
                         isDense: true,
                         border: OutlineInputBorder(
@@ -220,7 +157,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: Colors.black26),
+                          borderSide: const BorderSide(color: Colors.black26),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -230,72 +167,74 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Nút ở BÊN PHẢI, bên ngoài TextField
                   SizedBox(
-                    // height: 36.h,
                     child: ElevatedButton(
-                      onPressed: () {
-                        /* thực thi search */
-                      },
+                      onPressed: () { /* mở filter nâng cao */ },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: Colors.white,
                         side: BorderSide(color: AppColor.primaryColor),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        minimumSize: const Size(48, 48), // (tuỳ) đảm bảo đủ lớn
-                        padding: EdgeInsets.zero, // (tuỳ) để icon căn giữa
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        minimumSize: const Size(48, 48),
+                        padding: EdgeInsets.zero,
                       ),
-
-                      child: SvgPicture.asset(
-                        AppIcon.heart,
-                        color: Colors.black,
-                      ),
+                      child: SvgPicture.asset(AppIcon.heart, color: Colors.black),
                     ),
                   ),
                 ],
               ),
+
               SizedBox(height: 20.h),
-              BannerController(
-                images: banners,
-                autoPlay: true,
-                autoPlayInterval: const Duration(seconds: 4),
-              ),
+
+              // Banner + indicator (lấy từ controller)
+              if (loadingBanners && bannerItems.isEmpty)
+                const Center(child: CircularProgressIndicator())
+              else if (bannerError != null && bannerItems.isEmpty)
+                Text('Lỗi banner: $bannerError')
+              else ...[
+                BannerCarousel(
+                  images: bannerItems.map((e) => e.imageUrl).toList(),
+                  autoPlay: true,
+                  autoPlayInterval: const Duration(seconds: 4),
+                  onIndexChanged: (i) => setState(() => _bannerIndex = i),
+                  onTap: (i) {
+                    // TODO: dùng bannerItems[i].linkUrl để mở
+                  },
+                ),
+                SizedBox(height: 10.h),
+                DotsIndicator(count: bannerItems.length, index: _bannerIndex),
+              ],
+
               SizedBox(height: 20.h),
+
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  "Services",
+                  'Services',
                   style: TextStyle(
                     color: AppColor.primaryColor,
-                    fontSize: 14.w,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
               SizedBox(height: 20.h),
+
               Expanded(
                 child: GridView.builder(
                   padding: const EdgeInsets.all(16),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3, // hoặc tính theo màn hình
-                    // mainAxisSpacing: 10,
-                    // crossAxisSpacing: 5,
+                    crossAxisCount: 3,
                     childAspectRatio: 1.1,
                   ),
-                  itemCount: math.min(items.length, 6), // 👈 chỉ lấy tối đa 6
+                  itemCount: math.min(items.length, 6),
                   itemBuilder: (_, i) {
                     final s = items[i];
                     return Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
-                        onTap: () {
-                          /* điều hướng tới chi tiết */
-                        },
+                        onTap: () { /* TODO điều hướng */ },
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -309,11 +248,8 @@ class _HomePageState extends State<HomePage> {
                                     if (progress == null) return child;
                                     return const Center(
                                       child: SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
+                                        width: 16, height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
                                       ),
                                     );
                                   },
@@ -321,25 +257,13 @@ class _HomePageState extends State<HomePage> {
                               )
                             else
                               const Icon(Icons.home_repair_service, size: 40),
-                            // const SizedBox(height: 8),
+                            SizedBox(height: 6.h),
                             Text(
                               s.title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 5,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
                             ),
-                            // if (s.title != null)
-                            // const SizedBox(height: 8),
-                            //   Padding(
-                            //     padding: const EdgeInsets.all(16.0),
-                            //     child: Text(
-                            //       '${s.title}',
-                            //       style: const TextStyle(color: Colors.black, fontSize: 10),
-                            //     ),
-                            //   ),
                           ],
                         ),
                       ),
@@ -361,55 +285,43 @@ class _HomePageState extends State<HomePage> {
       children: [
         Row(
           children: [
-            Text(
-              "Hello, ",
+            Text('Hello, ',
               style: TextStyle(
-                fontFamily: "AROneSans",
+                fontFamily: 'AROneSans',
                 color: AppColor.primaryColor,
-                fontSize: 14.h,
+                fontSize: 14.sp,
                 fontWeight: FontWeight.bold,
               ),
             ),
             if (_loadingName)
-              const SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
+              const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
             else
-              Text(
-                _name,
+              Text(name,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: "AROneSans",
+                  fontFamily: 'AROneSans',
                   color: Colors.black,
-                  fontSize: 14.h,
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.bold,
                 ),
               ),
           ],
         ),
         SizedBox(height: 4.h),
-        // location
         Row(
-          // mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.location_on, size: 16.h, color: AppColor.primaryColor),
             SizedBox(width: 4.w),
             _loadingLoc
-                ? SizedBox(
-                    width: 12.w,
-                    height: 12.w,
-                    child: const CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? SizedBox(width: 12.w, height: 12.w, child: const CircularProgressIndicator(strokeWidth: 2))
                 : ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: 160.w),
                     child: Text(
                       _location,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 14.h,
-                        fontFamily: "AROneSans",
+                        fontSize: 12.sp,
+                        fontFamily: 'AROneSans',
                         fontWeight: FontWeight.w400,
                         color: Colors.black,
                       ),
@@ -429,15 +341,9 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(50),
-          border: Border.all(color: AppColor.primaryColor, width: 2.5), // viền
+          border: Border.all(color: AppColor.primaryColor, width: 2.5),
         ),
-        child: SvgPicture.asset(
-          AppIcon.user,
-          // width: 20.w,
-          // height: 20.w,
-          // nếu cần đồng bộ màu:
-          // colorFilter: ColorFilter.mode(AppColor.primaryColor, BlendMode.srcIn),
-        ),
+        child: SvgPicture.asset(AppIcon.user),
       ),
     );
   }

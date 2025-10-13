@@ -1,77 +1,71 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode, defaultTargetPlatform, TargetPlatform;
+// lib/controller/user_controller.dart
 import 'package:http/http.dart' as http;
-import 'package:mobile/router/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-const String kBaseUrl = AppRouter.main_domain;
+import 'package:mobile/router/app_router.dart';
+import 'package:mobile/data/remote/user_api.dart';
+// (tuỳ chọn) import model User nếu bạn đã có:
+// import 'package:mobile/domain/model/user.dart';
 
 class UserController {
-  UserController(this._client, this._sp);
-  final http.Client _client;
+  UserController(this._api, this._sp);
+
+  final UserApi _api;
   final SharedPreferences _sp;
 
-  /// Factory khởi tạo kèm SharedPreferences
-  static Future<UserController> create() async {
+  /// Tạo controller kèm SharedPreferences + http.Client
+  static Future<UserController> create({String? baseUrl}) async {
     final sp = await SharedPreferences.getInstance();
-    return UserController(http.Client(), sp);
+    final api = UserApi(http.Client(), baseUrl ?? AppRouter.main_domain);
+    return UserController(api, sp);
   }
 
   String? get token => _sp.getString('token');
+  bool get isLoggedIn => (token != null && token!.isNotEmpty);
 
-  Future<bool> login({required String email, required String password}) async {
-    final res = await _client.post(
-      Uri.parse('$kBaseUrl/account/login'),
-      headers: {'Content-Type': 'application/json'},
-      // Nếu server bạn vẫn dùng 'password_hash', đổi key ở đây
-      body: jsonEncode({'email': email, 'password_hash': password}),
+  /// Đăng nhập: lưu token (nếu có). Trả true nếu OK.
+  Future<bool> login({
+    required String email,
+    required String password,
+    bool useHashKey = true, // đổi về false nếu server dùng 'password'
+  }) async {
+    final (t, userJson) = await _api.login(
+      email: email,
+      password: password,
+      useHashKey: useHashKey,
     );
 
-    if (res.statusCode != 200) {
-      // cố gắng đọc message lỗi
-      try {
-        final err = jsonDecode(res.body);
-        throw Exception(err['error'] ?? err['message'] ?? 'Login failed');
-      } catch (_) {
-        throw Exception('Login failed (${res.statusCode})');
-      }
-    }
-
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
-
-    // Nếu server trả JWT
-    final t = data['token'] as String?;
     if (t != null && t.isNotEmpty) {
       await _sp.setString('token', t);
+      return true;
     }
 
+    // Không có token nhưng vẫn coi là OK (tuỳ nhu cầu)
+    // Có thể lưu tạm tên/email để hiển thị:
+    // await _sp.setString('temp_name', (userJson['fullname'] ?? userJson['email'] ?? 'User').toString());
     return true;
   }
 
   /// Lấy tên hiển thị từ /account/me (cần token)
   Future<String> fetchDisplayName() async {
     final t = token;
-    if (t == null) throw Exception('No token');
-
-    final res = await _client.get(
-      Uri.parse('$kBaseUrl/account/me'),
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $t',
-      },
-    );
-
-    if (res.statusCode != 200) {
-      throw Exception('Fetch profile failed (${res.statusCode})');
+    if (t == null || t.isEmpty) {
+      // thử fallback temp_name nếu bạn đã lưu
+      final tmp = _sp.getString('temp_name');
+      if (tmp != null && tmp.isNotEmpty) return tmp;
+      throw Exception('No token');
     }
 
-    final json = jsonDecode(res.body);
-    final user = json['user'] ?? json;
-    final name = (user['fullName'] ).toString();
+    final user = await _api.me(token: t);
+    final name = (user['fullName'] ?? user['fullname'] ?? user['email'] ?? 'User').toString();
     return name;
   }
 
   Future<void> logout() async {
     await _sp.remove('token');
+    await _sp.remove('temp_name');
+  }
+
+  void dispose() {
+    _api.dispose();
   }
 }
