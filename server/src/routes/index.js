@@ -1,9 +1,9 @@
 const accountRouter = require('./account')
-const homeRouter = require('./home')
+const serviceRouter = require('./service')
 
 function route(app){
     app.use('/account', accountRouter)
-    app.use('/home', homeRouter)
+    app.use('/service', serviceRouter)
 }
 
 module.exports = route

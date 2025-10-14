@@ -1,7 +1,7 @@
 const { model } = require('mongoose');
 const Service = require('../models/Service')
 class ServiceController{
-    //GET - /home/service
+    //GET - /service/get
     async showall(req, res){
         try {
             const services = await Service.find()
