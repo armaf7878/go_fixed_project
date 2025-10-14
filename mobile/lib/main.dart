@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/config/themes/app_theme.dart';
+import 'package:mobile/view/home/services_page.dart';
 import 'package:mobile/view/login_page.dart';
-import 'package:mobile/view/main_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +29,7 @@ class App extends StatelessWidget {
           home: child,                  // quan trọng: dùng child để giữ context ScreenUtil
         );
       },
-      child: const LoginPage(),         // màn hình khởi đầu
+      child: const ServicesPage(),         // màn hình khởi đầu
     );
   }
 }

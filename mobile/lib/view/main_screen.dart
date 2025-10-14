@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:mobile/config/themes/app_color.dart';
-import 'package:mobile/view/home_page.dart';
+import 'package:mobile/view/home/home_page.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class Mainscreen extends StatefulWidget {
