@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import 'package:mobile/config/assets/app_banner.dart';
 import 'package:mobile/config/assets/app_icon.dart';
 import 'package:mobile/config/assets/app_image.dart';
 import 'package:mobile/config/themes/app_color.dart';
@@ -171,7 +170,7 @@ class _HomePageState extends State<HomePage> {
                     child: ElevatedButton(
                       onPressed: () { /* mở filter nâng cao */ },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
+                        backgroundColor: Color(0xffF3F8FB),
                         foregroundColor: Colors.white,
                         side: BorderSide(color: AppColor.primaryColor),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
