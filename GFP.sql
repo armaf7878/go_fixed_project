@@ -3,6 +3,7 @@ CREATE TABLE `users` (
   `fullname` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) NOT NULL,
   `phone` VARCHAR(20) NOT NULL,
+  `current_location` POINT,
   `password_hash` VARCHAR(255) NOT NULL,
   `avatar_url` VARCHAR(1024),
   `role` ENUM ('end_user', 'mechanic', 'admin') NOT NULL DEFAULT 'end_user',
