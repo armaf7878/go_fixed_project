@@ -29,21 +29,24 @@ class VnPayController {
           message: "Thiếu mã đơn hàng",
         });
       }
-
+      function toVNTime(date) {
+          const vnOffset = 7 * 60; // +7h in minutes
+          return new Date(date.getTime() + vnOffset * 60000);
+      }
       const tomorrow = new Date();
       tomorrow.setMinutes(tomorrow.getMinutes() + 15);
 
       const paymentUrl = await vnPay.buildPaymentUrl({
         vnp_Amount: Number(amount),
         vnp_Command: "pay",
-        vnp_IpAddr: "127.0.0.1",
+        vnp_IpAddr: "https://go-fixed-project.onrender.com/",
         vnp_Locale: VnpLocale.VN,
         vnp_OrderInfo: `Thanh toan cho ma GD ${String(orderId)}`,
         vnp_OrderType: ProductCode.Other,
         vnp_ReturnUrl: process.env.VNPAY_RETURN_URL,
         vnp_TxnRef: String(orderId),
-        vnp_CreateDate: dateFormat(new Date()),
-        vnp_ExpireDate: dateFormat(tomorrow),
+        vnp_CreateDate: dateFormat(toVNTime(new Date())),
+        vnp_ExpireDate: dateFormat(toVNTime(tomorrow)),
       });
 
       return res.status(200).json({ paymentUrl: paymentUrl });
