@@ -15,7 +15,7 @@ function ServiceBooking() {
     const [position, setPosition] = useState(null);
     const [finding, setFinding] = useState(false);
     const [errors, setErrors] = useState({});
-    const images1 = ["https://example.com/image1.jpg", "https://example.com/image2.jpg"];
+    const images1 = ["https://www.zuttoride.vn/uploads/image/Nga/lop-xe-may-bi-hong.jpg"];
     const storedService = localStorage.getItem("selectedService")
     const service = storedService ? JSON.parse(storedService) : null;
 
